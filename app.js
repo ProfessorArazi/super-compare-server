@@ -1,5 +1,6 @@
 const express = require("express");
 require("./src/db/mongoose");
+const cors = require("cors");
 const Mega = require("./src/Models/mega");
 const Shufersal = require("./src/Models/shufersal");
 const Rami = require("./src/Models/rami");
@@ -8,8 +9,20 @@ const findDiscount = require("./src/helpers/findDiscount");
 const sortPrices = require("./src/helpers/sortPrices");
 const orderPrices = require("./src/helpers/orderPrices");
 const findDuplicates = require("./src/helpers/findDuplicats");
+const { request } = require("express");
+const res = require("express/lib/response");
 const app = express();
 app.use(express.json());
+app.use(cors({ origin: "*" }));
+
+app.use(function (req, res, next) {
+  res.header("Access-Control-Allow-Origin", "*");
+  next();
+});
+
+app.get("/", (request, response) => {
+  res.send({ message: "working" });
+});
 
 app.post("/add_shufersal", async (request, response) => {
   const shufersal = new Shufersal(request.body);
