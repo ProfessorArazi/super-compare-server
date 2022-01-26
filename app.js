@@ -20,7 +20,7 @@ app.use(function (req, res, next) {
   next();
 });
 
-app.get("/", (request, response) => {
+app.get("/", (req, res) => {
   res.send({ message: "working" });
 });
 
