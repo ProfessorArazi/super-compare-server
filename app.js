@@ -9,8 +9,6 @@ const findDiscount = require("./src/helpers/findDiscount");
 const sortPrices = require("./src/helpers/sortPrices");
 const orderPrices = require("./src/helpers/orderPrices");
 const findDuplicates = require("./src/helpers/findDuplicats");
-const { request } = require("express");
-const res = require("express/lib/response");
 const app = express();
 app.use(express.json());
 app.use(cors({ origin: "*" }));
