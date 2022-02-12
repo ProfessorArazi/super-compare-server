@@ -3,12 +3,20 @@ require("./src/db/mongoose");
 const cors = require("cors");
 const Mega = require("./src/Models/mega");
 const Shufersal = require("./src/Models/shufersal");
-const Rami = require("./src/Models/rami");
+const Bitan = require("./src/Models/bitan");
 const calculate = require("./src/helpers/calculate");
 const findDiscount = require("./src/helpers/findDiscount");
 const sortPrices = require("./src/helpers/sortPrices");
 const orderPrices = require("./src/helpers/orderPrices");
 const findDuplicates = require("./src/helpers/findDuplicats");
+const {
+  updateShufersal,
+  updateMegaAndBitan,
+} = require("./src/helpers/updateData");
+const {
+  generateShufersalObject,
+} = require("./src/productsNames/geneateNamesObject");
+
 const app = express();
 app.use(express.json());
 app.use(cors({ origin: "*" }));
@@ -18,6 +26,19 @@ app.use(function (req, res, next) {
   next();
 });
 
+// updateMegaAndBitan(
+//   [
+//     "https://www.mega.co.il/search/%D7%94%D7%9E%D7%91%D7%95%D7%A8%D7%92%D7%A8?filter=all&filters=%7B%22brand%22:%5B255,20311%5D%7D",
+//     "https://www.mega.co.il/search/%D7%A7%D7%95%D7%98%D7%92?filter=all&filters=%7B%22brand%22:%5B200,1605%5D%7D",
+//   ],
+//   [
+//     "https://www.ybitan.co.il/search/%D7%A7%D7%95%D7%98%D7%92?filter=all&filters=%7B%22brand%22:%5B200,1605%5D%7D",
+//     "https://www.ybitan.co.il/search/%D7%94%D7%9E%D7%91%D7%95%D7%A8%D7%92%D7%A8?filter=all&filters=%7B%22brand%22:%5B255,20311%5D%7D",
+//   ]
+// );
+
+// updateShufersal();
+// updateMegaAndBitan();
 app.get("/", (req, res) => {
   res.send({ message: "working" });
 });
@@ -38,48 +59,48 @@ app.post("/compare", async (req, res) => {
   let duplicates = data.filter((x) => data.indexOf(x) !== data.lastIndexOf(x));
   duplicates = duplicates.filter((x, i) => i !== duplicates.lastIndexOf(x));
   let mega;
-  let rami;
+  let bitan;
   let shufersal;
   let megaPrices = [];
   let shufersalPrices = [];
-  let ramiPrices = [];
+  let bitanPrices = [];
 
   mega = await Mega.find({ name: data });
-  rami = await Rami.find({ name: data });
+  bitan = await Bitan.find({ name: data });
   shufersal = await Shufersal.find({ name: data });
 
   for (let i = 0; i < duplicates.length; i++) {
     mega.push(mega.find((x) => x.name === duplicates[i]));
-    rami.push(rami.find((x) => x.name === duplicates[i]));
+    bitan.push(bitan.find((x) => x.name === duplicates[i]));
     shufersal.push(shufersal.find((x) => x.name === duplicates[i]));
   }
 
   findDiscount(mega);
-  findDiscount(rami);
+  findDiscount(bitan);
   findDiscount(shufersal);
 
   mega = findDuplicates(mega);
   shufersal = findDuplicates(shufersal);
-  rami = findDuplicates(rami);
+  bitan = findDuplicates(bitan);
 
   mega = sortPrices(mega);
   shufersal = sortPrices(shufersal);
-  rami = sortPrices(rami);
+  bitan = sortPrices(bitan);
 
   orderPrices(mega, megaPrices);
   orderPrices(shufersal, shufersalPrices);
-  orderPrices(rami, ramiPrices);
+  orderPrices(bitan, bitanPrices);
 
   let megaPrice = calculate(megaPrices);
 
   let shufersalPrice = calculate(shufersalPrices);
 
-  let ramiPrice = calculate(ramiPrices);
+  let bitanPrice = calculate(bitanPrices);
 
   const prices = [
     ["מגה", megaPrice, megaPrices],
     ["שופרסל", shufersalPrice, shufersalPrices],
-    ["רמי לוי", ramiPrice, ramiPrices],
+    ["יינות ביתן", bitanPrice, bitanPrices],
   ].sort((a, b) => a[1] - b[1]);
   res.send(prices);
 });

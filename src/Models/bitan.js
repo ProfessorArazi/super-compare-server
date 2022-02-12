@@ -1,6 +1,6 @@
 const mongoose = require("mongoose");
 
-const RamiSchema = new mongoose.Schema({
+const BitanSchema = new mongoose.Schema({
   name: {
     type: String,
     required: true,
@@ -23,6 +23,6 @@ const RamiSchema = new mongoose.Schema({
   },
 });
 
-const Rami = mongoose.model("Rami", RamiSchema);
+const Bitan = mongoose.model("Bitan", BitanSchema);
 
-module.exports = Rami;
+module.exports = Bitan;
