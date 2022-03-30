@@ -13,9 +13,6 @@ const {
   updateShufersal,
   updateMegaAndBitan,
 } = require("./src/helpers/updateData");
-const {
-  generateShufersalObject,
-} = require("./src/productsNames/geneateNamesObject");
 
 const app = express();
 app.use(express.json());
@@ -26,19 +23,11 @@ app.use(function (req, res, next) {
   next();
 });
 
-// updateMegaAndBitan(
-//   [
-//     "https://www.mega.co.il/search/%D7%94%D7%9E%D7%91%D7%95%D7%A8%D7%92%D7%A8?filter=all&filters=%7B%22brand%22:%5B255,20311%5D%7D",
-//     "https://www.mega.co.il/search/%D7%A7%D7%95%D7%98%D7%92?filter=all&filters=%7B%22brand%22:%5B200,1605%5D%7D",
-//   ],
-//   [
-//     "https://www.ybitan.co.il/search/%D7%A7%D7%95%D7%98%D7%92?filter=all&filters=%7B%22brand%22:%5B200,1605%5D%7D",
-//     "https://www.ybitan.co.il/search/%D7%94%D7%9E%D7%91%D7%95%D7%A8%D7%92%D7%A8?filter=all&filters=%7B%22brand%22:%5B255,20311%5D%7D",
-//   ]
-// );
+setInterval(() => {
+  updateShufersal();
+  updateMegaAndBitan();
+}, 86400000);
 
-// updateShufersal();
-// updateMegaAndBitan();
 app.get("/", (req, res) => {
   res.send({ message: "working" });
 });
@@ -104,16 +93,6 @@ app.post("/compare", async (req, res) => {
   ].sort((a, b) => a[1] - b[1]);
   res.send(prices);
 });
-
-// app.post("/mega", async (request, response) => {
-//   const mega = await Mega.find({ name: request.body.name });
-
-//   try {
-//     response.send(mega);
-//   } catch (error) {
-//     response.status(500).send(error);
-//   }
-// });
 
 const PORT = process.env.PORT || 8080;
 

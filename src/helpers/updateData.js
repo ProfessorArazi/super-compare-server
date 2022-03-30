@@ -72,8 +72,6 @@ const updateMegaAndBitan = async () => {
 
   updateMongo(bitanArr, "bitan");
 
-  // console.log(megaArr);
-
   await browser.close();
 };
 
