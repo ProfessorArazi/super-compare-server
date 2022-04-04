@@ -29,6 +29,7 @@ setInterval(() => {
 }, 86400000);
 
 app.get("/", (req, res) => {
+  console.log("working");
   res.send({ message: "working" });
 });
 
