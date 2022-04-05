@@ -1,7 +1,6 @@
 const express = require("express");
-const cors = require("cors");
-require("dotenv").config();
 require("./src/db/mongoose");
+const cors = require("cors");
 const Mega = require("./src/Models/mega");
 const Shufersal = require("./src/Models/shufersal");
 const Bitan = require("./src/Models/bitan");
