@@ -1,4 +1,5 @@
 const express = require("express");
+require("dotenv").config({ path: __dirname + "/.env" });
 require("./src/db/mongoose");
 const cors = require("cors");
 const Mega = require("./src/Models/mega");
