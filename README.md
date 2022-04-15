@@ -1,6 +1,6 @@
 # Super-Compare-Server
 
-This is the server of super compare. <br/>
+This is the server side of super compare. <br/>
    Super compare is a comparison site that compares three well-known markets.
           <br />
           I created a scraper to get all the latest prices from each market so
