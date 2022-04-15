@@ -1,4 +1,4 @@
-# super-compare-server
+# Super-Compare-Server
 
 This is the server of super compare. <br/>
    Super compare is a comparison site that compares three well-known markets.
