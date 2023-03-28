@@ -50,7 +50,7 @@ async function scrapeData(page) {
     names.forEach((name, index) => {
       let obj = {};
       let priceObj = {};
-      priceObj.price = +prices[index][0].slice(1);
+      priceObj.price = +prices[index][0].slice(2);
       if (prices[index].length < 3) {
         priceObj.discount = 0;
         priceObj.discountPrice = 0;
@@ -63,6 +63,7 @@ async function scrapeData(page) {
     });
     return names;
   });
+  return console.log(data);
   return data;
 }
 
