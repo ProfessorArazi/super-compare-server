@@ -43,21 +43,13 @@ const createProductFilter = (subject) => {
                     { category: { $regex: subject, $options: "i" } },
                 ],
             },
-            { outOfStock: false },
+            { isOutOfStock: false },
         ],
     };
 };
 
 const fetchProductsFromDb = async (filter, skip, limit) => {
-    return await Product.find(filter)
-        .sort({
-            name: 1,
-            category: 1,
-            last_updated: -1,
-        })
-        .skip(skip)
-        .limit(limit)
-        .exec();
+    return await Product.find(filter).skip(skip).limit(limit).exec();
 };
 
 const processProductComparison = async (data) => {
