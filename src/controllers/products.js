@@ -103,20 +103,33 @@ const fetchProductsFromDb = async (filter, query, skip, limit) => {
     ]);
 };
 const processProductComparison = async (data) => {
-    const cart = [];
+    const productIds = data.map((product) => product.id);
 
-    for (const product of data) {
-        const foundProduct = await Product.findById(product.id);
-        if (foundProduct) {
-            cart.push({
-                quantity: product.amount,
-                prices: foundProduct.prices.map((price) => ({
-                    market: price.market,
-                    retailerProductId: price.retailerProductId,
-                })),
-            });
-        }
-    }
+    const foundProducts = await Product.find({
+        _id: { $in: productIds },
+    });
+
+    const productMap = {};
+
+    foundProducts.forEach((product) => {
+        productMap[product._id] = product;
+    }, {});
+
+    const cart = data
+        .map((product) => {
+            const foundProduct = productMap[product.id];
+            if (foundProduct) {
+                return {
+                    quantity: product.amount,
+                    prices: foundProduct.prices.map((price) => ({
+                        market: price.market,
+                        retailerProductId: price.retailerProductId,
+                    })),
+                };
+            }
+            return null;
+        })
+        .filter((item) => item !== null);
 
     return cart;
 };
