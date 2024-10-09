@@ -149,7 +149,7 @@ const compareProducts = async (req, res) => {
 
 const getProductsBySubject = async (req, res) => {
     const { subject } = req.params;
-    const { page = 1, limit = 17 } = req.query;
+    const { page = 1, limit = 15 } = req.query;
 
     try {
         const filter = createProductFilter(subject);
