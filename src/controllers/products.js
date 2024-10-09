@@ -92,6 +92,14 @@ const fetchProductsFromDb = async (filter, query, skip, limit) => {
         },
         { $skip: skip },
         { $limit: +limit },
+        {
+            $project: {
+                _id: 0,
+                id: "$_id",
+                name: 1,
+                prices: 1,
+            },
+        },
     ]);
 };
 const processProductComparison = async (data) => {
