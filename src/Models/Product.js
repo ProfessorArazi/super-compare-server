@@ -36,10 +36,12 @@ const ProductSchema = new mongoose.Schema({
         type: String,
         required: true,
     },
-    category: {
-        type: String,
-        required: true,
-    },
+    categories: [
+        {
+            type: String,
+            required: true,
+        },
+    ],
     isOutOfStock: {
         type: Boolean,
         required: true,

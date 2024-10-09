@@ -39,8 +39,8 @@ const createProductFilter = (subject) => {
         $and: [
             {
                 $or: [
+                    { categories: { $regex: subject, $options: "i" } },
                     { name: { $regex: subject, $options: "i" } },
-                    { category: { $regex: subject, $options: "i" } },
                 ],
             },
             { isOutOfStock: false },
@@ -48,10 +48,52 @@ const createProductFilter = (subject) => {
     };
 };
 
-const fetchProductsFromDb = async (filter, skip, limit) => {
-    return await Product.find(filter).skip(skip).limit(limit).exec();
+const fetchProductsFromDb = async (filter, query, skip, limit) => {
+    return await Product.aggregate([
+        {
+            $match: filter,
+        },
+        {
+            $addFields: {
+                category1ContainsQuery: {
+                    $regexMatch: {
+                        input: { $arrayElemAt: ["$categories", 0] },
+                        regex: query,
+                        options: "i",
+                    },
+                },
+                category2ContainsQuery: {
+                    $regexMatch: {
+                        input: { $arrayElemAt: ["$categories", 1] },
+                        regex: query,
+                        options: "i",
+                    },
+                },
+                category3ContainsQuery: {
+                    $regexMatch: {
+                        input: { $arrayElemAt: ["$categories", 2] },
+                        regex: query,
+                        options: "i",
+                    },
+                },
+                nameContainsQuery: {
+                    $regexMatch: { input: "$name", regex: query, options: "i" },
+                },
+            },
+        },
+        {
+            $sort: {
+                category1ContainsQuery: -1,
+                category2ContainsQuery: -1,
+                category3ContainsQuery: -1,
+                nameContainsQuery: -1,
+                name: 1,
+            },
+        },
+        { $skip: skip },
+        { $limit: +limit },
+    ]);
 };
-
 const processProductComparison = async (data) => {
     const cart = [];
 
@@ -154,7 +196,12 @@ const getProductsBySubject = async (req, res) => {
     try {
         const filter = createProductFilter(subject);
         const skip = (page - 1) * limit;
-        const products = await fetchProductsFromDb(filter, skip, limit);
+        const products = await fetchProductsFromDb(
+            filter,
+            subject,
+            skip,
+            limit
+        );
 
         res.status(200).json(products);
     } catch (error) {
