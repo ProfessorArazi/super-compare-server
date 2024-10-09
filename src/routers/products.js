@@ -6,7 +6,7 @@ const {
 
 const router = express.Router();
 
-router.get("/products/:subject", getProductsBySubject);
-router.post("/compare", compareProducts);
+router.get("/api/products/:subject", getProductsBySubject);
+router.post("/api/products/compare", compareProducts);
 
 module.exports = router;
