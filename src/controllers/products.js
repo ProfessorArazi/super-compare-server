@@ -189,11 +189,8 @@ const compareProducts = async (req, res) => {
 
             return {
                 market,
-                id: cartData.id,
+                url: `https://www.${hebrewToEnglish[market]}.co.il/?loginOrRegister=${cartData.id}`,
                 price: cartData.totalPrice,
-                outOfStock: cartData.lines
-                    .filter((line) => !line.isProductOutOfStock)
-                    .map((out) => out.text),
             };
         });
 
