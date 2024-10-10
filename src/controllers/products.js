@@ -34,13 +34,13 @@ const servers = {
     // },
 };
 
-const createProductFilter = (subject) => {
+const createProductFilter = (regex) => {
     return {
         $and: [
             {
                 $or: [
-                    { categories: { $regex: subject, $options: "i" } },
-                    { name: { $regex: subject, $options: "i" } },
+                    { categories: { $regex: regex } },
+                    { name: { $regex: regex } },
                 ],
             },
             { isOutOfStock: false },
@@ -48,7 +48,7 @@ const createProductFilter = (subject) => {
     };
 };
 
-const fetchProductsFromDb = async (filter, query, skip, limit) => {
+const fetchProductsFromDb = async (filter, regex, skip, limit) => {
     return await Product.aggregate([
         {
             $match: filter,
@@ -58,26 +58,23 @@ const fetchProductsFromDb = async (filter, query, skip, limit) => {
                 category1ContainsQuery: {
                     $regexMatch: {
                         input: { $arrayElemAt: ["$categories", 0] },
-                        regex: query,
-                        options: "i",
+                        regex,
                     },
                 },
                 category2ContainsQuery: {
                     $regexMatch: {
                         input: { $arrayElemAt: ["$categories", 1] },
-                        regex: query,
-                        options: "i",
+                        regex,
                     },
                 },
                 category3ContainsQuery: {
                     $regexMatch: {
                         input: { $arrayElemAt: ["$categories", 2] },
-                        regex: query,
-                        options: "i",
+                        regex,
                     },
                 },
                 nameContainsQuery: {
-                    $regexMatch: { input: "$name", regex: query, options: "i" },
+                    $regexMatch: { input: "$name", regex },
                 },
             },
         },
@@ -212,14 +209,12 @@ const getProductsBySubject = async (req, res) => {
     const { page = 1, limit = 15 } = req.query;
 
     try {
-        const filter = createProductFilter(subject);
+        const regexPattern = subject.split(" ").join(".*");
+        const regex = new RegExp(regexPattern, "i");
+
+        const filter = createProductFilter(regex);
         const skip = (page - 1) * limit;
-        const products = await fetchProductsFromDb(
-            filter,
-            subject,
-            skip,
-            limit
-        );
+        const products = await fetchProductsFromDb(filter, regex, skip, limit);
 
         res.status(200).json(products);
     } catch (error) {
