@@ -3,8 +3,11 @@ const axios = require("axios");
 
 const hebrewToEnglish = {
     "יינות ביתן": "ybitan",
-    מגה: "carrefour",
+    קרפור: "carrefour",
     קוויק: "quik",
+    "סופר יודה": "yuda",
+    ויקטורי: "victoryonline",
+    "טיב טעם": "tivtaam",
 };
 
 const servers = {
@@ -15,23 +18,28 @@ const servers = {
 
     carrefour: {
         retailers: 1540,
-        branches: 2995,
+        branches: 2998,
     },
 
     quik: {
         retailers: 1541,
-        branches: 2993,
+        branches: 3106,
     },
 
-    // yuda: {
-    //     retailers: 1492,
-    //     branches: 2481,
-    // },
+    yuda: {
+        retailers: 1492,
+        branches: 2481,
+    },
 
-    // victoryonline: {
-    //     retailers: 1470,
-    //     branches: 2550,
-    // },
+    victoryonline: {
+        retailers: 1470,
+        branches: 2550,
+    },
+
+    tivtaam: {
+        retailers: 1062,
+        branches: 924,
+    },
 };
 
 const createProductFilter = (regex) => {
@@ -39,6 +47,7 @@ const createProductFilter = (regex) => {
         $and: [
             {
                 $or: [
+                    { brand: { $regex: regex } },
                     { categories: { $regex: regex } },
                     { name: { $regex: regex } },
                 ],
@@ -48,13 +57,22 @@ const createProductFilter = (regex) => {
     };
 };
 
-const fetchProductsFromDb = async (filter, regex, skip, limit) => {
+const fetchProductsFromDb = async (filter, regex, query, skip, limit) => {
     return await Product.aggregate([
         {
             $match: filter,
         },
         {
             $addFields: {
+                brandContainsQuery: {
+                    $cond: {
+                        if: { $ne: ["$brand", null] },
+                        then: {
+                            $eq: ["$brand", query],
+                        },
+                        else: false,
+                    },
+                },
                 category1ContainsQuery: {
                     $regexMatch: {
                         input: { $arrayElemAt: ["$categories", 0] },
@@ -80,6 +98,7 @@ const fetchProductsFromDb = async (filter, regex, skip, limit) => {
         },
         {
             $sort: {
+                brandContainsQuery: -1,
                 category1ContainsQuery: -1,
                 category2ContainsQuery: -1,
                 category3ContainsQuery: -1,
@@ -95,10 +114,12 @@ const fetchProductsFromDb = async (filter, regex, skip, limit) => {
                 id: "$_id",
                 name: 1,
                 prices: 1,
+                brand: 1,
             },
         },
     ]);
 };
+
 const processProductComparison = async (data) => {
     const productIds = data.map((product) => product.id);
 
@@ -214,7 +235,13 @@ const getProductsBySubject = async (req, res) => {
 
         const filter = createProductFilter(regex);
         const skip = (page - 1) * limit;
-        const products = await fetchProductsFromDb(filter, regex, skip, limit);
+        const products = await fetchProductsFromDb(
+            filter,
+            regex,
+            subject,
+            skip,
+            limit
+        );
 
         res.status(200).json(products);
     } catch (error) {
