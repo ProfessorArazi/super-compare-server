@@ -48,6 +48,9 @@ const ProductSchema = new mongoose.Schema({
         required: true,
     },
     prices: [PriceSchema],
+    brand: {
+        type: String,
+    },
     last_updated: {
         type: Date,
         default: Date.now,
