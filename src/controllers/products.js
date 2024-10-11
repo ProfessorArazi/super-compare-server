@@ -8,6 +8,7 @@ const hebrewToEnglish = {
     "סופר יודה": "yuda",
     ויקטורי: "victoryonline",
     "טיב טעם": "tivtaam",
+    ampm: "ampm",
 };
 
 const servers = {
@@ -39,6 +40,11 @@ const servers = {
     tivtaam: {
         retailers: 1062,
         branches: 924,
+    },
+
+    ampm: {
+        retailers: 2,
+        branches: 4,
     },
 };
 
