@@ -221,9 +221,18 @@ const getProductsBySubject = async (req, res) => {
         const marketMap = await fetchMarketNames();
 
         products.forEach((product) =>
-            product.prices.forEach(
-                (price) => (price.market = marketMap[price.market].name)
-            )
+            product.prices
+                .sort((a, b) =>
+                    a.discountPrice && !b.discountPrice
+                        ? -1
+                        : b.discountPrice && !a.discountPrice
+                        ? 1
+                        : (a.discountPrice || a.price) -
+                          (b.discountPrice || b.price)
+                )
+                .forEach(
+                    (price) => (price.market = marketMap[price.market].name)
+                )
         );
 
         res.status(200).json(products);
