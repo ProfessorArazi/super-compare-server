@@ -1,45 +1,16 @@
+const Market = require("../Models/Market");
 const Product = require("../Models/Product");
 const axios = require("axios");
 
-const hebrewToEnglish = {
-    "יינות ביתן": "ybitan",
-    קרפור: "carrefour",
-    קוויק: "quik",
-    "סופר יודה": "yuda",
-    ויקטורי: "victoryonline",
-    "טיב טעם": "tivtaam",
-};
+const fetchMarketNames = async () => {
+    const markets = await Market.find();
+    const marketLookup = {};
 
-const servers = {
-    ybitan: {
-        retailers: 1131,
-        branches: 1015,
-    },
+    markets.forEach((market) => {
+        marketLookup[market._id.toString()] = market;
+    });
 
-    carrefour: {
-        retailers: 1540,
-        branches: 2992,
-    },
-
-    quik: {
-        retailers: 1541,
-        branches: 2993,
-    },
-
-    yuda: {
-        retailers: 1492,
-        branches: 2481,
-    },
-
-    victoryonline: {
-        retailers: 1470,
-        branches: 2550,
-    },
-
-    tivtaam: {
-        retailers: 1062,
-        branches: 924,
-    },
+    return marketLookup;
 };
 
 const createProductFilter = (regex) => {
@@ -120,7 +91,7 @@ const fetchProductsFromDb = async (filter, regex, query, skip, limit) => {
     ]);
 };
 
-const processProductComparison = async (data) => {
+const processProductComparison = async (data, marketMap) => {
     const productIds = data.map((product) => product.id);
 
     const foundProducts = await Product.find({
@@ -140,7 +111,7 @@ const processProductComparison = async (data) => {
                 return {
                     quantity: product.amount,
                     prices: foundProduct.prices.map((price) => ({
-                        market: price.market,
+                        market: marketMap[price.market].name,
                         retailerProductId: price.retailerProductId,
                     })),
                 };
@@ -173,12 +144,9 @@ const createMarketCarts = (cart) => {
     return marketsCarts;
 };
 
-const fetchCartFromMarket = async (market, lines) => {
-    const englishMarket = hebrewToEnglish[market];
-    const server = servers[englishMarket];
-
+const fetchCartFromMarket = async (market, lines, server) => {
     const response = await axios.post(
-        `https://www.${englishMarket}.co.il/v2/retailers/${server.retailers}/branches/${server.branches}/carts?appId=4`,
+        `https://www.${server.englishName}.co.il/v2/retailers/${server.retailers}/branches/${server.branches}/carts?appId=4`,
         {
             lines,
         },
@@ -196,18 +164,25 @@ const compareProducts = async (req, res) => {
     const data = req.body;
 
     try {
-        const cart = await processProductComparison(data);
+        let marketMap = await fetchMarketNames();
+
+        const cart = await processProductComparison(data, marketMap);
         const marketsCarts = createMarketCarts(cart);
 
+        marketMap = Object.values(marketMap);
+
         const promises = Object.keys(marketsCarts).map(async (market) => {
+            const server = marketMap.find((server) => server.name === market);
+
             const cartData = await fetchCartFromMarket(
                 market,
-                marketsCarts[market]
+                marketsCarts[market],
+                server
             );
 
             return {
                 market,
-                url: `https://www.${hebrewToEnglish[market]}.co.il/?loginOrRegister=${cartData.id}`,
+                url: `https://www.${server.englishName}.co.il/?loginOrRegister=${cartData.id}`,
                 price: cartData.totalPrice,
             };
         });
@@ -241,6 +216,23 @@ const getProductsBySubject = async (req, res) => {
             subject,
             skip,
             limit
+        );
+
+        const marketMap = await fetchMarketNames();
+
+        products.forEach((product) =>
+            product.prices
+                .sort((a, b) =>
+                    a.discountPrice && !b.discountPrice
+                        ? -1
+                        : b.discountPrice && !a.discountPrice
+                        ? 1
+                        : (a.discountPrice || a.price) -
+                          (b.discountPrice || b.price)
+                )
+                .forEach(
+                    (price) => (price.market = marketMap[price.market].name)
+                )
         );
 
         res.status(200).json(products);
