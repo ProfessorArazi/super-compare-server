@@ -1,35 +1,5 @@
 const mongoose = require("mongoose");
-
-const PriceSchema = new mongoose.Schema({
-    market: {
-        type: String,
-        required: true,
-    },
-    price: {
-        type: Number,
-        required: true,
-        default: 0,
-    },
-    retailerProductId: {
-        type: Number,
-        required: true,
-    },
-    discount: {
-        type: Number,
-        default: 0,
-    },
-    discountPrice: {
-        type: Number,
-        default: 0,
-    },
-    img: {
-        type: String,
-    },
-    timestamp: {
-        type: Date,
-        default: Date.now,
-    },
-});
+const PriceSchema = require("./Price");
 
 const ProductSchema = new mongoose.Schema({
     name: {
