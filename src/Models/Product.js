@@ -51,6 +51,9 @@ const ProductSchema = new mongoose.Schema({
     brand: {
         type: String,
     },
+    weight: {
+        type: String,
+    },
     last_updated: {
         type: Date,
         default: Date.now,
