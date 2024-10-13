@@ -202,7 +202,7 @@ const compareProducts = async (req, res) => {
 
 const getProductsBySubject = async (req, res) => {
     const { subject } = req.params;
-    const { page = 1, limit = 15 } = req.query;
+    const { page = 1, limit = 11 } = req.query;
 
     try {
         const regexPattern = subject.split(" ").join(".*");
