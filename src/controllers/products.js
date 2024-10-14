@@ -205,8 +205,12 @@ const getProductsBySubject = async (req, res) => {
     const { page = 1, limit = 11 } = req.query;
 
     try {
-        const regexPattern = subject.split(" ").join(".*");
-        const regex = new RegExp(regexPattern, "i");
+        const regexPattern = subject
+            .split(/[\s,]+|(?<=\s|,)ו+/)
+            .filter((match) => match)
+            .join("|");
+
+        const regex = new RegExp(regexPattern);
 
         const filter = createProductFilter(regex);
         const skip = (page - 1) * limit;
