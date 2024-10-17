@@ -83,7 +83,7 @@ const favoritesMapping = async (favorites) => {
                     );
 
                     if (productDetails) {
-                        const { _id, ...rest } = productDetails.toObject();
+                        const { _id, ...rest } = productDetails;
                         return {
                             id: _id,
                             ...rest,
