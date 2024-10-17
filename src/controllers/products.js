@@ -23,7 +23,6 @@ const createProductFilter = (regex) => {
                     { name: { $regex: regex } },
                 ],
             },
-            { isOutOfStock: false },
         ],
     };
 };
@@ -86,6 +85,7 @@ const fetchProductsFromDb = async (filter, regex, query, skip, limit) => {
                 name: 1,
                 prices: 1,
                 brand: 1,
+                image: 1,
             },
         },
     ]);
@@ -126,25 +126,31 @@ const processProductComparison = async (data, marketMap) => {
 const createMarketCarts = (cart) => {
     const marketsCarts = {};
 
-    cart.forEach((item) => {
-        item.prices.forEach((price) => {
-            const product = {
-                quantity: item.quantity,
-                retailerProductId: price.retailerProductId,
-            };
+    for (const price of cart[0].prices) {
+        marketsCarts[price.market] = [];
+    }
 
-            if (marketsCarts[price.market]) {
+    cart.forEach((item) => {
+        item.prices
+            .filter((price) => price.retailerProductId)
+            .forEach((price) => {
+                const product = {
+                    quantity: item.quantity,
+                    retailerProductId: price.retailerProductId,
+                };
+
                 marketsCarts[price.market].push(product);
-            } else {
-                marketsCarts[price.market] = [product];
-            }
-        });
+            });
     });
 
     return marketsCarts;
 };
 
-const fetchCartFromMarket = async (market, lines, server) => {
+const fetchCartFromMarket = async (lines, server) => {
+    if (lines.length === 0) {
+        return { totalPrice: 0, id: 0 };
+    }
+
     const response = await axios.post(
         `https://www.${server.englishName}.co.il/v2/retailers/${server.retailers}/branches/${server.branches}/carts?appId=4`,
         {
@@ -175,7 +181,6 @@ const compareProducts = async (req, res) => {
             const server = marketMap.find((server) => server.name === market);
 
             const cartData = await fetchCartFromMarket(
-                market,
                 marketsCarts[market],
                 server
             );
@@ -230,6 +235,10 @@ const getProductsBySubject = async (req, res) => {
                     a.discountPrice && !b.discountPrice
                         ? -1
                         : b.discountPrice && !a.discountPrice
+                        ? 1
+                        : a.price && !b.price
+                        ? -1
+                        : !a.price && b.price
                         ? 1
                         : (a.discountPrice || a.price) -
                           (b.discountPrice || b.price)

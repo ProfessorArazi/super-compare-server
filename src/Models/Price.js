@@ -1,4 +1,3 @@
-// Price.js
 const mongoose = require("mongoose");
 
 const PriceSchema = new mongoose.Schema({
@@ -23,9 +22,6 @@ const PriceSchema = new mongoose.Schema({
     discountPrice: {
         type: Number,
         default: 0,
-    },
-    img: {
-        type: String,
     },
     timestamp: {
         type: Date,
