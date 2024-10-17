@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Super Compare</title>
+        <style>
+            body {
+                font-family: Arial, sans-serif;
+                background-color: #f4f4f4;
+                margin: 0;
+                padding: 0;
+                color: #333;
+            }
+            .container {
+                width: 80%;
+                max-width: 600px;
+                margin: 20px auto;
+                padding: 20px;
+                background: #fff;
+                border-radius: 8px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+                text-align: right;
+                direction: rtl;
+            }
+            h1 {
+                font-size: 24px;
+                color: #333;
+            }
+            p {
+                font-size: 16px;
+                line-height: 1.5;
+            }
+            #button {
+                display: inline-block;
+                padding: 10px 60px;
+                font-size: 16px;
+                color: #fff;
+                font-weight: 600;
+                background-color: #007bff;
+                text-decoration: none;
+                border-radius: 5px;
+                margin-top: 20px;
+            }
+            .footer {
+                margin-top: 20px;
+                font-size: 14px;
+                color: #777;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>אימות כתובת אימייל</h1>
+            <p>היי {{name}},</p>
+            <p>
+                כדי להשלים את ההרשמה ולהפעיל את חשבונך, אנא אמת/י את כתובת
+                האימייל שלך על ידי לחיצה על הקישור למטה:
+            </p>
+            <a style="color: #fff; font-weight: 600" href="{{link}}" id="button"
+                >אמת/י את האימייל שלך</a
+            >
+            <p>אם לא נרשמת/ה לחשבון, ניתן להתעלם ממייל זה.</p>
+        </div>
+    </body>
+</html>

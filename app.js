@@ -4,6 +4,10 @@ require("./src/db/mongoose");
 const cors = require("cors");
 
 const productsRouter = require("./src/routers/products");
+const authRouter = require("./src/routers/auth");
+const favoritesRouter = require("./src/routers/favorites");
+
+const { verifyToken } = require("./src/middlewares/authenticate");
 
 const app = express();
 app.use(express.json());
@@ -15,6 +19,9 @@ app.use(function (req, res, next) {
 });
 
 app.use(productsRouter);
+app.use(authRouter);
+app.use(verifyToken);
+app.use(favoritesRouter);
 
 const PORT = process.env.PORT || 8080;
 
