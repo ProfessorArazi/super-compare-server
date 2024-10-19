@@ -214,9 +214,10 @@ const getProductsBySubject = async (req, res) => {
                         : (a.discountPrice || a.price) -
                           (b.discountPrice || b.price)
                 )
-                .forEach(
-                    (price) => (price.market = marketMap[price.market].name)
-                )
+                .forEach((price) => {
+                    price.logo = marketMap[price.market].logo;
+                    price.market = marketMap[price.market].name;
+                })
         );
 
         res.status(200).json(products);
