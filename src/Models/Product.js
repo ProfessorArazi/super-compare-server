@@ -24,9 +24,7 @@ const ProductSchema = new mongoose.Schema({
     weight: {
         type: Number,
     },
-    image: {
-        type: String,
-    },
+    images: [String],
     last_updated: {
         type: Date,
         default: Date.now,

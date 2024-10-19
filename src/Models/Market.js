@@ -19,6 +19,10 @@ const MarketSchema = new mongoose.Schema({
         type: Number,
         required: true,
     },
+    logo: {
+        type: String,
+        required: true,
+    },
 });
 
 MarketSchema.virtual("id").get(function () {

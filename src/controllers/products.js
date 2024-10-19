@@ -85,62 +85,35 @@ const fetchProductsFromDb = async (filter, regex, query, skip, limit) => {
                 name: 1,
                 prices: 1,
                 brand: 1,
-                image: 1,
+                images: 1,
             },
         },
     ]);
-};
-
-const processProductComparison = async (data, marketMap) => {
-    const productIds = data.map((product) => product.id);
-
-    const foundProducts = await Product.find({
-        _id: { $in: productIds },
-    });
-
-    const productMap = {};
-
-    foundProducts.forEach((product) => {
-        productMap[product._id] = product;
-    }, {});
-
-    const cart = data
-        .map((product) => {
-            const foundProduct = productMap[product.id];
-            if (foundProduct) {
-                return {
-                    quantity: product.amount,
-                    prices: foundProduct.prices.map((price) => ({
-                        market: marketMap[price.market].name,
-                        retailerProductId: price.retailerProductId,
-                    })),
-                };
-            }
-            return null;
-        })
-        .filter((item) => item !== null);
-
-    return cart;
 };
 
 const createMarketCarts = (cart) => {
     const marketsCarts = {};
 
     for (const price of cart[0].prices) {
-        marketsCarts[price.market] = [];
+        marketsCarts[price.market] = {
+            cart: [],
+            missing: [],
+        };
     }
 
     cart.forEach((item) => {
-        item.prices
-            .filter((price) => price.retailerProductId)
-            .forEach((price) => {
+        item.prices.forEach((price) => {
+            if (price.retailerProductId) {
                 const product = {
-                    quantity: item.quantity,
+                    quantity: item.amount,
                     retailerProductId: price.retailerProductId,
                 };
 
-                marketsCarts[price.market].push(product);
-            });
+                marketsCarts[price.market].cart.push(product);
+            } else {
+                marketsCarts[price.market].missing.push(item);
+            }
+        });
     });
 
     return marketsCarts;
@@ -170,18 +143,14 @@ const compareProducts = async (req, res) => {
     const data = req.body;
 
     try {
-        let marketMap = await fetchMarketNames();
-
-        const cart = await processProductComparison(data, marketMap);
-        const marketsCarts = createMarketCarts(cart);
-
-        marketMap = Object.values(marketMap);
+        const markets = await Market.find();
+        const marketsCarts = createMarketCarts(data);
 
         const promises = Object.keys(marketsCarts).map(async (market) => {
-            const server = marketMap.find((server) => server.name === market);
+            const server = markets.find((server) => server.name === market);
 
             const cartData = await fetchCartFromMarket(
-                marketsCarts[market],
+                marketsCarts[market].cart,
                 server
             );
 
@@ -189,6 +158,8 @@ const compareProducts = async (req, res) => {
                 market,
                 url: `https://www.${server.englishName}.co.il/?loginOrRegister=${cartData.id}`,
                 price: cartData.totalPrice,
+                missing: marketsCarts[market].missing,
+                logo: server.logo,
             };
         });
 
