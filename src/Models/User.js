@@ -22,10 +22,6 @@ const FavoriteSchema = new mongoose.Schema({
 });
 
 const UserSchema = new mongoose.Schema({
-    name: {
-        type: String,
-        required: true,
-    },
     email: {
         type: String,
         required: true,
@@ -44,5 +40,7 @@ const UserSchema = new mongoose.Schema({
 });
 
 const User = mongoose.model("User", UserSchema);
+
+User.createIndexes();
 
 module.exports = User;

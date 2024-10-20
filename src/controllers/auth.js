@@ -15,14 +15,13 @@ const register = async (req, res) => {
 
         mailSender(
             user.email,
-            user.name,
             `${process.env.SERVER_URL}/api/auth/verify?id=${user.id}`
         );
 
         res.status(201).send({ id: user.id });
     } catch (e) {
         if (e.code === 11000) {
-            return res.status(409).send({ message: "email already exists" });
+            return res.status(409).send({ message: "האימייל קיים במערכת" });
         }
 
         return res.status(400).send({ message: "invalid fields" });
@@ -35,11 +34,11 @@ const login = async (req, res) => {
     const user = await User.findOne({ email });
 
     if (!user || !(await bcrypt.compare(password, user.password))) {
-        return res.status(400).send({ message: "wrong credentials" });
+        return res.status(400).send({ message: "אימייל או סיסמה לא נכונים" });
     }
 
     if (user.status != "Active") {
-        return res.status(400).send({ message: "need to autenticate" });
+        return res.status(400).send({ message: "משתמש לא מאומת" });
     }
 
     const token = generateToken(user);
@@ -60,7 +59,7 @@ const verify = async (req, res) => {
         return res.status(410).send({ message: "expired code" });
     }
 
-    res.status(303).redirect(`${process.env.CLIENT_URL}`);
+    res.status(303).redirect(`${process.env.CLIENT_URL}?login=1`);
 };
 
 const hashPassword = async (password) => {
@@ -70,7 +69,7 @@ const hashPassword = async (password) => {
 
 const generateToken = (user) => {
     const data = { id: user.id };
-    return jwt.sign(data, process.env.JWT_KEY, { expiresIn: "3h" });
+    return jwt.sign(data, process.env.JWT_KEY);
 };
 
 module.exports = { register, login, verify };

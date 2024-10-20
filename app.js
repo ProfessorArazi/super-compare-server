@@ -11,7 +11,14 @@ const { verifyToken } = require("./src/middlewares/authenticate");
 
 const app = express();
 app.use(express.json());
-app.use(cors({ origin: "*" }));
+
+const corsOptions = {
+    origin: `${process.env.CLIENT_URL}`,
+    methods: ["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allowedHeaders: ["Content-Type", "Authorization"],
+};
+
+app.use(cors(corsOptions));
 
 app.use(function (req, res, next) {
     res.header("Access-Control-Allow-Origin", "*");
