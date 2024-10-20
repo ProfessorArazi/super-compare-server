@@ -3,7 +3,7 @@ const fs = require("fs");
 const handleBars = require("handlebars");
 const path = require("path");
 
-const mailSender = async (email, name, link) => {
+const mailSender = async (email, link) => {
     let subject = "Super Compare";
     const mail = process.env.MAIL;
 
@@ -23,7 +23,6 @@ const mailSender = async (email, name, link) => {
     const template = handleBars.compile(templateHtml);
 
     const emailData = {
-        name,
         link,
     };
 
