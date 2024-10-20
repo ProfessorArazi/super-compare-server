@@ -59,7 +59,7 @@ const verify = async (req, res) => {
         return res.status(410).send({ message: "expired code" });
     }
 
-    res.status(303).redirect(`${process.env.CLIENT_URL}?login=1`);
+    res.status(303).redirect(`${process.env.CLIENT_URL}?login=1&verify=1`);
 };
 
 const hashPassword = async (password) => {
