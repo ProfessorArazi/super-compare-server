@@ -13,8 +13,8 @@ const fetchMarketNames = async () => {
     return marketLookup;
 };
 
-const createProductFilter = (regex) => {
-    return {
+const createProductFilter = (regex, isOutOfStock) => {
+    const filter = {
         $and: [
             {
                 $or: [
@@ -25,6 +25,11 @@ const createProductFilter = (regex) => {
             },
         ],
     };
+    if (!isOutOfStock) {
+        filter.$and.push({ isOutOfStock: false });
+    }
+
+    return filter;
 };
 
 const fetchProductsFromDb = async (filter, regex, query, skip, limit) => {
@@ -178,7 +183,7 @@ const compareProducts = async (req, res) => {
 
 const getProductsBySubject = async (req, res) => {
     const { subject } = req.params;
-    const { page = 1, limit = 11 } = req.query;
+    const { page = 1, limit = 11, outOfStock = true } = req.query;
 
     try {
         const regexPattern = subject
@@ -187,8 +192,9 @@ const getProductsBySubject = async (req, res) => {
             .join("|");
 
         const regex = new RegExp(regexPattern);
+        const outOfStockFlag = outOfStock === "true";
 
-        const filter = createProductFilter(regex);
+        const filter = createProductFilter(regex, outOfStockFlag);
         const skip = (page - 1) * limit;
         const products = await fetchProductsFromDb(
             filter,
