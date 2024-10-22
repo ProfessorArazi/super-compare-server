@@ -17,6 +17,14 @@ const ProductSchema = new mongoose.Schema({
         type: Boolean,
         required: true,
     },
+    minPrice: {
+        type: Number,
+        required: true,
+    },
+    maxPrice: {
+        type: Number,
+        required: true,
+    },
     prices: [PriceSchema],
     brand: {
         type: String,
