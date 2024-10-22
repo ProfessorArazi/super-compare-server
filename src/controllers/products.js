@@ -91,6 +91,8 @@ const fetchProductsFromDb = async (filter, regex, query, skip, limit) => {
                 prices: 1,
                 brand: 1,
                 images: 1,
+                minPrice: 1,
+                maxPrice: 1,
             },
         },
     ]);
