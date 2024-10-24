@@ -252,94 +252,98 @@ const getProductsBySubject = async (req, res) => {
     }
 };
 
-const filterByField = (arr, maxItems, field) => {
-    const usedValues = new Set();
+const filterSales = (arr) => {
+    const marketMap = {};
+
+    arr.forEach((product) => {
+        const market = product.hotSale.market.toString();
+        if (!marketMap[market]) {
+            marketMap[market] = [];
+        }
+        marketMap[market].push(product);
+    });
+
     const result = [];
+    const markets = Object.keys(marketMap);
 
-    for (let i = 0; i < arr.length && result.length < maxItems; i++) {
-        const item = arr[i];
+    let addedItem = true;
 
-        const values =
-            field === "market" && item.hotSale
-                ? [item.hotSale.market]
-                : item[field];
+    while (addedItem) {
+        addedItem = false;
 
-        const valueArray = Array.isArray(values) ? values : [values];
+        for (let i = 0; i < markets.length; i++) {
+            const market = markets[i];
 
-        const hasCommonValue = valueArray.every((value) =>
-            usedValues.has(value)
-        );
-
-        if (!hasCommonValue) {
-            result.push(item);
-            valueArray.forEach((value) => usedValues.add(value));
+            if (marketMap[market].length > 0) {
+                if (
+                    result.length === 0 ||
+                    result[result.length - 1].market !== market
+                ) {
+                    result.push(marketMap[market].shift());
+                    addedItem = true;
+                }
+            }
         }
     }
 
     return result;
 };
 
-const getPopularProducts = async (isOutOfStock) => {
-    const filter = { posSoldQty: { $gte: 1000 } };
+const getPopularProducts = async (isOutOfStock, marketMap) => {
+    const filter = { posSoldQty: { $gte: 500 } };
 
     if (!isOutOfStock) {
         filter.isOutOfStock = false;
     }
 
-    const [marketMap, products] = await Promise.all([
-        fetchMarketNames(),
-        Product.find(filter, {
-            _id: 1,
-            id: "$_id",
-            name: 1,
-            prices: 1,
-            brand: 1,
-            images: 1,
-            minPrice: 1,
-            maxPrice: 1,
-            posSoldQty: 1,
-            categories: 1,
-        })
-            .sort({ posSoldQty: -1 })
-            .lean(),
-    ]);
+    const products = await Product.find(filter, {
+        _id: 1,
+        id: "$_id",
+        name: 1,
+        prices: 1,
+        brand: 1,
+        images: 1,
+        minPrice: 1,
+        maxPrice: 1,
+        posSoldQty: 1,
+        categories: 1,
+    })
+        .sort({ posSoldQty: -1 })
+        .limit(16)
+        .lean();
 
-    const popular = filterByField(products, 20, "categories");
+    sortPrices(products, marketMap);
 
-    sortPrices(popular, marketMap);
-
-    return popular;
+    return products;
 };
 
-const getHotSales = async (isOutOfStock) => {
+const getHotSales = async (isOutOfStock, marketMap) => {
     const filter = { hotSale: { $ne: null } };
 
     if (!isOutOfStock) {
         filter.isOutOfStock = false;
     }
 
-    const [marketMap, products] = await Promise.all([
-        fetchMarketNames(),
-        Product.find(filter, {
-            _id: 1,
-            id: "$_id",
-            name: 1,
-            prices: 1,
-            brand: 1,
-            images: 1,
-            minPrice: 1,
-            maxPrice: 1,
-            hotSale: 1,
-        })
-            .sort({ "hotSale.percentage": -1 })
-            .lean(),
-    ]);
+    const products = await Product.find(filter, {
+        _id: 1,
+        id: "$_id",
+        name: 1,
+        prices: 1,
+        brand: 1,
+        images: 1,
+        minPrice: 1,
+        maxPrice: 1,
+        hotSale: 1,
+    })
+        .sort({ "hotSale.percentage": -1 })
+        .limit(16)
+        .lean();
 
-    const sales = filterByField(products, 20, "market");
+    const sales = filterSales(products);
 
-    sales.forEach(
-        (sale) => (sale.hotSale.market = marketMap[sale.hotSale.market].name)
-    );
+    sales.forEach((sale) => {
+        sale.hotSale.market = marketMap[sale.hotSale.market].name;
+    });
 
     sortPrices(sales, marketMap);
 
@@ -351,9 +355,11 @@ const getHomePageContent = async (req, res) => {
         const { outOfStock = "true" } = req.query;
         const outOfStockFlag = outOfStock === "true";
 
+        const marketMap = await fetchMarketNames();
+
         const [popular, hotSales] = await Promise.all([
-            getPopularProducts(outOfStockFlag),
-            getHotSales(outOfStockFlag),
+            getPopularProducts(outOfStockFlag, marketMap),
+            getHotSales(outOfStockFlag, marketMap),
         ]);
 
         res.status(200).json({ popular, hotSales });
