@@ -13,15 +13,33 @@ const fetchMarketNames = async () => {
     return marketLookup;
 };
 
+const sortPrices = (products, marketMap) => {
+    products.forEach((product) =>
+        product.prices
+            .sort((a, b) =>
+                a.discountPrice && !b.discountPrice
+                    ? -1
+                    : b.discountPrice && !a.discountPrice
+                    ? 1
+                    : a.price && !b.price
+                    ? -1
+                    : !a.price && b.price
+                    ? 1
+                    : (a.discountPrice || a.price) -
+                      (b.discountPrice || b.price)
+            )
+            .forEach((price) => {
+                price.logo = marketMap[price.market].logo;
+                price.market = marketMap[price.market].name;
+            })
+    );
+};
+
 const createProductFilter = (regex, isOutOfStock) => {
     const filter = {
         $and: [
             {
-                $or: [
-                    { brand: { $regex: regex } },
-                    { categories: { $regex: regex } },
-                    { name: { $regex: regex } },
-                ],
+                $or: [{ name: regex }, { brand: regex }, { categories: regex }],
             },
         ],
     };
@@ -32,53 +50,73 @@ const createProductFilter = (regex, isOutOfStock) => {
     return filter;
 };
 
-const fetchProductsFromDb = async (filter, regex, query, skip, limit) => {
+const fetchProductsFromDb = async (filter, regex, words, skip, limit) => {
     return await Product.aggregate([
         {
             $match: filter,
         },
         {
             $addFields: {
-                brandContainsQuery: {
+                score: {
                     $cond: {
-                        if: { $ne: ["$brand", null] },
-                        then: {
-                            $eq: ["$brand", query],
+                        if: { $regexMatch: { input: "$name", regex } },
+                        then: 6,
+                        else: {
+                            $cond: {
+                                if: { $regexMatch: { input: "$brand", regex } },
+                                then: 5,
+                                else: {
+                                    $cond: {
+                                        if: {
+                                            $in: [regex.source, "$categories"],
+                                        },
+                                        then: 4,
+                                        else: {
+                                            $cond: {
+                                                if: {
+                                                    $regexMatch: {
+                                                        input: "$name",
+                                                        regex: words,
+                                                    },
+                                                },
+                                                then: 3,
+                                                else: {
+                                                    $cond: {
+                                                        if: {
+                                                            $regexMatch: {
+                                                                input: "$brand",
+                                                                regex: words,
+                                                            },
+                                                        },
+                                                        then: 2,
+                                                        else: {
+                                                            $cond: {
+                                                                if: {
+                                                                    $in: [
+                                                                        words.source,
+                                                                        "$categories",
+                                                                    ],
+                                                                },
+                                                                then: 1,
+                                                                else: 0,
+                                                            },
+                                                        },
+                                                    },
+                                                },
+                                            },
+                                        },
+                                    },
+                                },
+                            },
                         },
-                        else: false,
                     },
-                },
-                category1ContainsQuery: {
-                    $regexMatch: {
-                        input: { $arrayElemAt: ["$categories", 0] },
-                        regex,
-                    },
-                },
-                category2ContainsQuery: {
-                    $regexMatch: {
-                        input: { $arrayElemAt: ["$categories", 1] },
-                        regex,
-                    },
-                },
-                category3ContainsQuery: {
-                    $regexMatch: {
-                        input: { $arrayElemAt: ["$categories", 2] },
-                        regex,
-                    },
-                },
-                nameContainsQuery: {
-                    $regexMatch: { input: "$name", regex },
                 },
             },
         },
         {
             $sort: {
-                brandContainsQuery: -1,
-                category1ContainsQuery: -1,
-                category2ContainsQuery: -1,
-                category3ContainsQuery: -1,
-                nameContainsQuery: -1,
-                name: 1,
+                score: -1,
+                _id: 1,
             },
         },
         { $skip: skip },
@@ -185,7 +223,7 @@ const compareProducts = async (req, res) => {
 
 const getProductsBySubject = async (req, res) => {
     const { subject } = req.params;
-    const { page = 1, limit = 11, outOfStock = true } = req.query;
+    const { page = 1, limit = 11, outOfStock = "true" } = req.query;
 
     try {
         const regexPattern = subject
@@ -193,49 +231,146 @@ const getProductsBySubject = async (req, res) => {
             .filter((match) => match)
             .join("|");
 
-        const regex = new RegExp(regexPattern);
+        const regex = new RegExp(subject, "i");
+        const words = new RegExp(regexPattern, "i");
+
         const outOfStockFlag = outOfStock === "true";
 
-        const filter = createProductFilter(regex, outOfStockFlag);
+        const filter = createProductFilter(words, outOfStockFlag);
         const skip = (page - 1) * limit;
-        const products = await fetchProductsFromDb(
-            filter,
-            regex,
-            subject,
-            skip,
-            limit
-        );
 
-        const marketMap = await fetchMarketNames();
+        const [marketMap, products] = await Promise.all([
+            fetchMarketNames(),
+            fetchProductsFromDb(filter, regex, words, skip, limit),
+        ]);
 
-        products.forEach((product) =>
-            product.prices
-                .sort((a, b) =>
-                    a.discountPrice && !b.discountPrice
-                        ? -1
-                        : b.discountPrice && !a.discountPrice
-                        ? 1
-                        : a.price && !b.price
-                        ? -1
-                        : !a.price && b.price
-                        ? 1
-                        : (a.discountPrice || a.price) -
-                          (b.discountPrice || b.price)
-                )
-                .forEach((price) => {
-                    price.logo = marketMap[price.market].logo;
-                    price.market = marketMap[price.market].name;
-                })
-        );
-
+        sortPrices(products, marketMap);
         res.status(200).json(products);
     } catch (error) {
         console.error("Error fetching product data:", error);
-        res.status(500).send({ message: "Error fetching product data", error });
+        res.status(500).send({ message: "something went wrong" });
+    }
+};
+
+const filterSales = (arr) => {
+    const marketMap = {};
+
+    arr.forEach((product) => {
+        const market = product.hotSale.market.toString();
+        if (!marketMap[market]) {
+            marketMap[market] = [];
+        }
+        marketMap[market].push(product);
+    });
+
+    const result = [];
+    const markets = Object.keys(marketMap);
+
+    let addedItem = true;
+
+    while (addedItem) {
+        addedItem = false;
+
+        for (let i = 0; i < markets.length; i++) {
+            const market = markets[i];
+
+            if (marketMap[market].length > 0) {
+                if (
+                    result.length === 0 ||
+                    result[result.length - 1].market !== market
+                ) {
+                    result.push(marketMap[market].shift());
+                    addedItem = true;
+                }
+            }
+        }
+    }
+
+    return result;
+};
+
+const getPopularProducts = async (isOutOfStock, marketMap) => {
+    const filter = { posSoldQty: { $gte: 500 } };
+
+    if (!isOutOfStock) {
+        filter.isOutOfStock = false;
+    }
+
+    const products = await Product.find(filter, {
+        _id: 1,
+        id: "$_id",
+        name: 1,
+        prices: 1,
+        brand: 1,
+        images: 1,
+        minPrice: 1,
+        maxPrice: 1,
+        posSoldQty: 1,
+        categories: 1,
+    })
+        .sort({ posSoldQty: -1 })
+        .limit(16)
+        .lean();
+
+    sortPrices(products, marketMap);
+
+    return products;
+};
+
+const getHotSales = async (isOutOfStock, marketMap) => {
+    const filter = { hotSale: { $ne: null } };
+
+    if (!isOutOfStock) {
+        filter.isOutOfStock = false;
+    }
+
+    const products = await Product.find(filter, {
+        _id: 1,
+        id: "$_id",
+        name: 1,
+        prices: 1,
+        brand: 1,
+        images: 1,
+        minPrice: 1,
+        maxPrice: 1,
+        hotSale: 1,
+    })
+        .sort({ "hotSale.percentage": -1 })
+        .limit(16)
+        .lean();
+
+    const sales = filterSales(products);
+
+    sales.forEach((sale) => {
+        sale.hotSale.market = marketMap[sale.hotSale.market].name;
+    });
+
+    sortPrices(sales, marketMap);
+
+    return sales;
+};
+
+const getHomePageContent = async (req, res) => {
+    try {
+        const { outOfStock = "true" } = req.query;
+        const outOfStockFlag = outOfStock === "true";
+
+        const marketMap = await fetchMarketNames();
+
+        const [popular, hotSales] = await Promise.all([
+            getPopularProducts(outOfStockFlag, marketMap),
+            getHotSales(outOfStockFlag, marketMap),
+        ]);
+
+        res.status(200).json({ popular, hotSales });
+    } catch (error) {
+        console.error("Error fetching product data:", error);
+        res.status(500).send({ message: "something went wrong" });
     }
 };
 
 module.exports = {
     getProductsBySubject,
+    getHomePageContent,
     compareProducts,
 };

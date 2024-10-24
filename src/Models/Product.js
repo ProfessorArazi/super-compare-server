@@ -1,5 +1,6 @@
 const mongoose = require("mongoose");
 const PriceSchema = require("./Price");
+const HotSaleSchema = require("./HotSale");
 
 const ProductSchema = new mongoose.Schema({
     name: {
@@ -31,6 +32,11 @@ const ProductSchema = new mongoose.Schema({
     },
     weight: {
         type: Number,
+    },
+    hotSale: HotSaleSchema,
+    posSoldQty: {
+        type: Number,
+        required: true,
     },
     images: [String],
     last_updated: {
