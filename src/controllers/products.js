@@ -275,14 +275,37 @@ const filterSales = (arr) => {
             const market = markets[i];
 
             if (marketMap[market].length > 0) {
-                if (
-                    result.length === 0 ||
-                    result[result.length - 1].market !== market
-                ) {
-                    result.push(marketMap[market].shift());
-                    addedItem = true;
-                }
+                result.push(marketMap[market].shift());
+                addedItem = true;
             }
+        }
+    }
+
+    return result;
+};
+
+const filterByCategories = (arr, maxItems, maxByBrand) => {
+    const usedValues = new Set();
+    const brandCount = {};
+    const result = [];
+
+    for (let i = 0; i < arr.length && result.length < maxItems; i++) {
+        const item = arr[i];
+        const values = item.categories;
+        const brand = item.brand;
+
+        if (!brandCount[brand]) {
+            brandCount[brand] = 0;
+        }
+
+        const hasCommonCategory = values.every((value) =>
+            usedValues.has(value)
+        );
+
+        if (!hasCommonCategory && (!brand || brandCount[brand] < maxByBrand)) {
+            result.push(item);
+            values.forEach((value) => usedValues.add(value));
+            brandCount[brand]++;
         }
     }
 
@@ -309,12 +332,14 @@ const getPopularProducts = async (isOutOfStock, marketMap) => {
         categories: 1,
     })
         .sort({ posSoldQty: -1 })
-        .limit(16)
+        .limit(30)
         .lean();
 
-    sortPrices(products, marketMap);
+    const popular = filterByCategories(products, 16, 1);
 
-    return products;
+    sortPrices(popular, marketMap);
+
+    return popular;
 };
 
 const getHotSales = async (isOutOfStock, marketMap) => {
@@ -334,12 +359,13 @@ const getHotSales = async (isOutOfStock, marketMap) => {
         minPrice: 1,
         maxPrice: 1,
         hotSale: 1,
+        categories: 1,
     })
         .sort({ "hotSale.percentage": -1 })
-        .limit(16)
+        .limit(30)
         .lean();
 
-    const sales = filterSales(products);
+    const sales = filterSales(filterByCategories(products, 16, 1));
 
     sales.forEach((sale) => {
         sale.hotSale.market = marketMap[sale.hotSale.market].name;
