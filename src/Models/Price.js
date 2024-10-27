@@ -15,6 +15,11 @@ const PriceSchema = new mongoose.Schema({
         type: Number,
         required: true,
     },
+    unitResolution: {
+        type: Number,
+        default: 1,
+    },
+
     discount: {
         type: Number,
         default: 0,
