@@ -150,7 +150,7 @@ const createMarketCarts = (cart) => {
         item.prices.forEach((price) => {
             if (price.retailerProductId) {
                 const product = {
-                    quantity: item.amount,
+                    quantity: item.amount * price.unitResolution,
                     retailerProductId: price.retailerProductId,
                 };
 
