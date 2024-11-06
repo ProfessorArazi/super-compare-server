@@ -3,8 +3,6 @@ require("dotenv").config({ path: __dirname + "/.env" });
 require("./src/db/mongoose");
 const cors = require("cors");
 
-//
-
 const productsRouter = require("./src/routers/products");
 const authRouter = require("./src/routers/auth");
 const favoritesRouter = require("./src/routers/favorites");
